@@ -54,17 +54,18 @@ function _constant_end(qsym, esym, name, reference, eunit)
         Unitful.unit(::Constant{$qsym,T,D,U}) where {T,D,U}      = $eunit
         Unitful.dimension(::Constant{$qsym,T,D,U}) where {T,D,U} = D
 
-        @assert isa(ustrip(float($esym)), Float64)
-        @assert isa(ustrip(big($esym)), BigFloat)
-        @assert isa(ustrip(measurement($esym)), Measurement{Float64})
-        @assert isa(ustrip(measurement(Float32, $esym)), Measurement{Float32})
-        @assert ustrip(float(Float64, $esym)) == Float64(ustrip(big($esym)))
-        @assert ustrip(float(Float32, $esym)) == Float32(ustrip(big($esym)))
-        @assert Float64(value(ustrip(measurement(BigFloat, $esym)))) ==
-            value(ustrip(measurement($esym)))
-        @assert Float64(uncertainty(ustrip(measurement(BigFloat, $esym)))) ==
-            uncertainty(ustrip(measurement($esym)))
-        @assert ustrip(big($esym)) == value(ustrip(measurement(BigFloat, $esym)))
+        @assert isa(ustrip($eunit, float($esym)), Float64)
+        @assert isa(ustrip($eunit, big($esym)), BigFloat)
+        @assert isa(ustrip($eunit, measurement($esym)), Measurement{Float64})
+        @assert isa(ustrip($eunit, measurement(Float32, $esym)), Measurement{Float32})
+        @assert ustrip($eunit, float(Float64, $esym)) == Float64(ustrip($eunit, big($esym)))
+        @assert ustrip($eunit, float(Float32, $esym)) == Float32(ustrip($eunit, big($esym)))
+        @assert Float64(value(ustrip($eunit, measurement(BigFloat, $esym)))) ==
+            value(ustrip($eunit, measurement($esym)))
+        @assert Float64(uncertainty(ustrip($eunit, measurement(BigFloat, $esym)))) ==
+            uncertainty(ustrip($eunit, measurement($esym)))
+        @assert ustrip($eunit, big($esym)) ==
+            value(ustrip($eunit, measurement(BigFloat, $esym)))
     end
 end
 
@@ -122,7 +123,7 @@ macro derived_constant(sym, name, val, def, unit, measure64, measurebig, referen
         Measurements.measurement(::Type{Float64}, ::Constant{$qsym,T,D,U}) where {T,D,U} = $(esc(measure64))
         Measurements.measurement(::Type{BigFloat}, ::Constant{$qsym,T,D,U}) where {T,D,U} = $(esc(measurebig))
         Measurements.measurement(FT::DataType, x::Constant{$qsym,T,D,U}) where {T,D,U} =
-            convert(Measurement{FT}, ustrip(measurement(x))) * $eunit
+            convert(Measurement{FT}, ustrip($eunit, measurement(x))) * $eunit
 
         $(_constant_end(qsym, esym, name, reference, eunit))
     end
@@ -134,11 +135,11 @@ function Base.show(io::IO, x::Constant{sym,T,D,U}) where {T,D,U} where sym
     println(io, "$(name(x)) ($sym)")
     println(io, "Value                         = ", float(x))
     println(io, "Standard uncertainty          = ",
-            iszero(uncertainty(ustrip(measurement(x)))) ? "(exact)" :
-            uncertainty(ustrip(measurement(x))) * unit(x))
+            iszero(uncertainty(ustrip(unit(x), measurement(x)))) ? "(exact)" :
+            uncertainty(ustrip(unit(x), measurement(x))) * unit(x))
     println(io, "Relative standard uncertainty = ",
-            iszero(uncertainty(ustrip(measurement(x)))) ? "(exact)" :
-            round(uncertainty(ustrip(measurement(x)))/value(ustrip(measurement(x))),
+            iszero(uncertainty(ustrip(unit(x), measurement(x)))) ? "(exact)" :
+            round(uncertainty(ustrip(unit(x), measurement(x)))/value(ustrip(unit(x), measurement(x))),
                   sigdigits=2))
     print(io,   "Reference                     = ", ref(x))
 end
